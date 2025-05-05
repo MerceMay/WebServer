@@ -87,7 +87,7 @@ Alternatively, to test the server:
    ```
 2. Or open your browser and visit:
    ```text
-   http://localhost:8080
+   http://localhost:<port>
    ```
 
 ---
@@ -119,7 +119,7 @@ bin/WebBench -c <connections> -t <time> <url>
 ```
 Example:
 ```bash
-bin/WebBench -c 5 -t 5 http://127.0.0.1:8080/
+bin/WebBench -c 5 -t 5 http://localhost:<port>/
 ```
 ---
 
