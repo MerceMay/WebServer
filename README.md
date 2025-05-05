@@ -127,9 +127,3 @@ bin/WebBench -c 5 -t 5 http://localhost:<port>/
 
 - The web server and log system implementation is inspired by [linyacool/WebServer](https://github.com/linyacool/WebServer).
 - The benchmarking tool is based on [EZLippi/WebBench](https://github.com/EZLippi/WebBench).
-
----
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
