@@ -207,10 +207,7 @@ int main(int argc, char* argv[])
 
     std::cout << "Benchmarking: ";
 
-    if (clients == 1)
-        std::cout << "1 client";
-    else
-        std::cout << clients << " clients";
+    std::cout << clients << " clients";
     std::cout << ", running " << benchtime << " sec";
 
     if (force)
@@ -375,14 +372,7 @@ int bench(void)
         {
             // child process
             close(mypipe[0]); // close read end
-            if (proxyhost.empty())
-            {
-                benchcore(host, proxyport, request);
-            }
-            else
-            {
-                benchcore(proxyhost, proxyport, request);
-            }
+            benchcore(proxyhost.empty() ? host : proxyhost, proxyport, request);
             FILE* fp = fdopen(mypipe[1], "w");
             if (fp == nullptr)
             {
