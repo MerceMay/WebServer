@@ -83,7 +83,7 @@ cd .. && bin/Server -t <thread_number> -p <port>
 Alternatively, to test the server:
 1. Ensure you are in parent directory and execute the server:
    ```bash
-   bin/Server
+   bin/Client
    ```
 2. Or open your browser and visit:
    ```text
