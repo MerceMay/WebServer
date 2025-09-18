@@ -25,5 +25,5 @@ private:
     LogStream m_stream;     // log stream for appending log content
 };
 
-// 宏定义，简化日志调用
+// macro for easy logging with file name and line number
 #define LOG(logPath) Logger(__FILE__, __LINE__, logPath).getStream()
