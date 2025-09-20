@@ -55,9 +55,6 @@ void Channel::handleEvent()
 bool Channel::isEqualAndSetLastEventsToEvents()
 {
     bool isEqual = (events_ == lastEvents_);
-    if (isEqual)
-    {
-        lastEvents_ = events_;
-    }
+    lastEvents_ = events_; // Always sync lastEvents_ with current events_
     return isEqual;
 }

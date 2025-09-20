@@ -14,9 +14,9 @@ class Channel : public std::enable_shared_from_this<Channel>
 private:
     std::shared_ptr<EventLoop> loop_; // event loop
     int fd_;
-    unsigned int events_;         // event types registered (EPOLLIN, EPOLLOUT, EPOLLET)
-    unsigned int rightnowEvents_; // event types that are currently active
-    unsigned int lastEvents_;     // last processed event types
+    unsigned int events_;         // event types to register for next epoll operation (EPOLLIN, EPOLLOUT, EPOLLET)
+    unsigned int rightnowEvents_; // event types that are currently active (set by epoll_wait results)
+    unsigned int lastEvents_;     // last registered event types (used for epoll update optimization)
 
     std::weak_ptr<HttpData> holder_; // get the HttpData object which this channel is associated
 
@@ -56,5 +56,7 @@ public:
     unsigned int& getEvents() { return events_; }
     void setRevents(unsigned int revents) { rightnowEvents_ = revents; }
 
+    // Synchronizes lastEvents_ with events_ and returns true if they were equal before sync
+    // Used for epoll update optimization: if events haven't changed, skip epoll_ctl call
     bool isEqualAndSetLastEventsToEvents();
 };
