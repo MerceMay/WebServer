@@ -14,9 +14,7 @@ class Channel : public std::enable_shared_from_this<Channel>
 private:
     std::shared_ptr<EventLoop> loop_; // event loop
     int fd_;
-    unsigned int events_;         // event types registered (EPOLLIN, EPOLLOUT, EPOLLET)
-    unsigned int rightnowEvents_; // event types that are currently active
-    unsigned int lastEvents_;     // last processed event types
+    unsigned int events_;         // event types to monitor (EPOLLIN, EPOLLOUT, EPOLLET)
 
     std::weak_ptr<HttpData> holder_; // get the HttpData object which this channel is associated
 
@@ -50,11 +48,8 @@ public:
     void setErrorHandler(std::function<void()> handler) { errorHandler = handler; }
     void setConnectHandler(std::function<void()> handler) { connectHandler = handler; }
 
-    void handleEvent();
+    void handleEvent(unsigned int activeEvents);
 
     void setEvents(unsigned int events) { events_ = events; }
     unsigned int& getEvents() { return events_; }
-    void setRevents(unsigned int revents) { rightnowEvents_ = revents; }
-
-    bool isEqualAndSetLastEventsToEvents();
 };

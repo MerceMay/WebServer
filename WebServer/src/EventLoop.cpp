@@ -33,7 +33,6 @@ void EventLoop::handleRead()
     {
         LOG("log") << "EventLoop::handleRead() reads " << n << " bytes instead of 8";
     }
-    eventChannel_->setRevents(EPOLLIN | EPOLLET); // set rightnow events to read mode
 }
 
 void EventLoop::handleConnect()
@@ -91,11 +90,11 @@ void EventLoop::loop()
     shouldStop_ = false;              // set stop flag
     while (!shouldStop_)              // loop until stop
     {
-        std::vector<std::shared_ptr<Channel>> activeChannels = epoll_->runEpoll(); // get active channels from epoll
-        isHandlingEvent_ = true;                                                   // set handling event flag
-        for (const auto& channel : activeChannels)                                 // iterate over active channels
+        std::vector<ChannelEvent> activeChannels = epoll_->runEpoll(); // get active channels from epoll
+        isHandlingEvent_ = true;                                       // set handling event flag
+        for (const auto& channelEvent : activeChannels)               // iterate over active channels
         {
-            channel->handleEvent(); // handle channel_'s event
+            channelEvent.first->handleEvent(channelEvent.second); // handle channel_'s event with active events
         }
         isHandlingEvent_ = false; // reset handling event flag
         doPendingFunctions();     // execute pending functions

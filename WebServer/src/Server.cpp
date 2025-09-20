@@ -88,7 +88,6 @@ void Server::handleAccept()
         newHttpData->getChannel()->setHolder(newHttpData);
         ioLoop->queueInLoop(std::bind(&HttpData::newEvent, newHttpData));
     }
-    acceptConnectionChannel_->setRevents(EPOLLIN | EPOLLET);
 }
 
 void Server::handleThisAccept()
