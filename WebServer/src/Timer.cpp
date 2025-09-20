@@ -18,19 +18,19 @@ TimerNode::~TimerNode()
 }
 
 TimerNode::TimerNode(const TimerNode& tn)
+    : isValid_(tn.isValid_), 
+      expire_time_point(tn.expire_time_point), 
+      httpData_(tn.httpData_)
 {
-    this->httpData_ = tn.httpData_;
-    this->expire_time_point = std::chrono::system_clock::now();
-    this->isValid_ = true;
 }
 
 TimerNode& TimerNode::operator=(const TimerNode& tn)
 {
     if (this != &tn)
     {
-        this->httpData_ = tn.httpData_;
-        this->expire_time_point = std::chrono::system_clock::now();
-        this->isValid_ = true;
+        httpData_ = tn.httpData_;
+        expire_time_point = tn.expire_time_point;
+        isValid_ = tn.isValid_;
     }
     return *this;
 }
@@ -65,12 +65,12 @@ void TimerNode::expired()
     isValid_ = false;
 }
 
-bool TimerNode::isDeleted()
+bool TimerNode::isDeleted() const
 {
     return !isValid_;
 }
 
-std::chrono::system_clock::time_point TimerNode::getExpireTime()
+std::chrono::system_clock::time_point TimerNode::getExpireTime() const
 {
     return expire_time_point;
 }

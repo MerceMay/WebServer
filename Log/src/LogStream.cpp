@@ -125,10 +125,9 @@ LogStream& LogStream::operator<<(char val)
 }
 LogStream& LogStream::operator<<(const char* val)
 {
-    const char* str = reinterpret_cast<const char*>(val);
-    if (str)
+    if (val)
     {
-        buffer_.append(str, std::strlen(str));
+        buffer_.append(val, std::strlen(val));
     }
     else
     {
@@ -154,7 +153,8 @@ LogStream& LogStream::operator<<(const unsigned char* val)
 {
     if (val)
     {
-        buffer_.append(reinterpret_cast<const char*>(val), std::strlen(reinterpret_cast<const char*>(val)));
+        const char* str = reinterpret_cast<const char*>(val);
+        buffer_.append(str, std::strlen(str));
     }
     else
     {

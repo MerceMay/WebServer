@@ -25,8 +25,8 @@ public:
     void clearHttpData(); // clear the weak pointer of HttpData
 
     void expired();
-    bool isDeleted();
-    std::chrono::system_clock::time_point getExpireTime();
+    bool isDeleted() const;
+    std::chrono::system_clock::time_point getExpireTime() const;
 };
 
 class TimerManager

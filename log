@@ -1,0 +1,2 @@
+[2025-09-20 15:44:55] New connection from 127.0.0.1:42066 fd: 14 -- /home/runner/work/WebServer/WebServer/WebServer/src/Server.cpp:72
+[2025-09-20 15:44:55] Request line: GET / HTTP/1.1 -- /home/runner/work/WebServer/WebServer/WebServer/src/HttpData.cpp:560

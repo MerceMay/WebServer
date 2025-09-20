@@ -22,18 +22,16 @@ FixedBuffer<SIZE>::FixedBuffer(FixedBuffer&& other) noexcept
 template <ssize_t SIZE>
 FixedBuffer<SIZE>& FixedBuffer<SIZE>::operator=(FixedBuffer&& other) noexcept
 {
+    if (this != &other)
     {
-        if (this != &other)
-        {
-            buffer_ = std::move(other.buffer_);                   // move other buffer_ to this buffer_
-            ptrdiff_t offset = other.cur_ - other.buffer_.data(); // calculate offset of cur_ relative to buffer_
-            cur_ = buffer_.data() + offset;
+        buffer_ = std::move(other.buffer_);                   // move other buffer_ to this buffer_
+        ptrdiff_t offset = other.cur_ - other.buffer_.data(); // calculate offset of cur_ relative to buffer_
+        cur_ = buffer_.data() + offset;
 
-            // set other cur_ to the beginning of its buffer_
-            other.cur_ = other.buffer_.data();
-        }
-        return *this;
+        // set other cur_ to the beginning of its buffer_
+        other.cur_ = other.buffer_.data();
     }
+    return *this;
 }
 
 template <ssize_t SIZE>

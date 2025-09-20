@@ -1,2 +1,0 @@
-/usr/bin/ar qc /home/runner/work/WebServer/WebServer/lib/libLog.a CMakeFiles/Log.dir/src/AppendFile.cpp.o CMakeFiles/Log.dir/src/AsyncLogging.cpp.o CMakeFiles/Log.dir/src/FixedBuffer.cpp.o CMakeFiles/Log.dir/src/LogFile.cpp.o CMakeFiles/Log.dir/src/Logger.cpp.o CMakeFiles/Log.dir/src/LoggingManager.cpp.o CMakeFiles/Log.dir/src/LogStream.cpp.o
-/usr/bin/ranlib /home/runner/work/WebServer/WebServer/lib/libLog.a

@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/Server.dir/link.d CMakeFiles/Server.dir/HttpServer.cpp.o -o /home/runner/work/WebServer/WebServer/bin/Server  /home/runner/work/WebServer/WebServer/lib/libWebServer.a /home/runner/work/WebServer/WebServer/lib/libLog.a
