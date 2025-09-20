@@ -1,0 +1,16 @@
+[2025-09-20 17:07:57] New connection from 127.0.0.1:54418 fd: 14 -- /home/runner/work/WebServer/WebServer/WebServer/src/Server.cpp:72
+[2025-09-20 17:07:57] Request line: HEAD / HTTP/1.1 -- /home/runner/work/WebServer/WebServer/WebServer/src/HttpData.cpp:560
+[2025-09-20 17:08:04] New connection from 127.0.0.1:51184 fd: 14 -- /home/runner/work/WebServer/WebServer/WebServer/src/Server.cpp:72
+[2025-09-20 17:08:04] Request line: GET / HTTP/1.1 -- /home/runner/work/WebServer/WebServer/WebServer/src/HttpData.cpp:560
+[2025-09-20 17:08:11] New connection from 127.0.0.1:57200 fd: 14 -- /home/runner/work/WebServer/WebServer/WebServer/src/Server.cpp:72
+[2025-09-20 17:08:11] Request line: GET /about.html HTTP/1.1 -- /home/runner/work/WebServer/WebServer/WebServer/src/HttpData.cpp:560
+[2025-09-20 17:08:41] New connection from 127.0.0.1:32996 fd: 14 -- /home/runner/work/WebServer/WebServer/WebServer/src/Server.cpp:72
+[2025-09-20 17:08:41] New connection from 127.0.0.1:33012 fd: 16 -- /home/runner/work/WebServer/WebServer/WebServer/src/Server.cpp:72
+[2025-09-20 17:08:41] Request line: GET /about.html HTTP/1.1 -- /home/runner/work/WebServer/WebServer/WebServer/src/HttpData.cpp:560
+[2025-09-20 17:08:41] New connection from 127.0.0.1:33020 fd: 17 -- /home/runner/work/WebServer/WebServer/WebServer/src/Server.cpp:72
+[2025-09-20 17:08:41] Request line: GET /about.html HTTP/1.1 -- /home/runner/work/WebServer/WebServer/WebServer/src/HttpData.cpp:560
+[2025-09-20 17:08:41] Request line: GET /about.html HTTP/1.1 -- /home/runner/work/WebServer/WebServer/WebServer/src/HttpData.cpp:560
+[2025-09-20 17:08:41] New connection from 127.0.0.1:33026 fd: 18 -- /home/runner/work/WebServer/WebServer/WebServer/src/Server.cpp:72
+[2025-09-20 17:08:41] Request line: GET /about.html HTTP/1.1 -- /home/runner/work/WebServer/WebServer/WebServer/src/HttpData.cpp:560
+[2025-09-20 17:08:41] New connection from 127.0.0.1:33040 fd: 14 -- /home/runner/work/WebServer/WebServer/WebServer/src/Server.cpp:72
+[2025-09-20 17:08:41] Request line: GET /about.html HTTP/1.1 -- /home/runner/work/WebServer/WebServer/WebServer/src/HttpData.cpp:560
