@@ -260,7 +260,10 @@ WebServer/CMakeFiles/WebServer.dir/src/Timer.cpp.o: \
  /usr/include/c++/13/bits/stl_relops.h \
  /home/runner/work/WebServer/WebServer/WebServer/inc/Util.h \
  /usr/include/x86_64-linux-gnu/sys/eventfd.h \
- /usr/include/x86_64-linux-gnu/bits/eventfd.h /usr/include/dirent.h \
+ /usr/include/x86_64-linux-gnu/bits/eventfd.h \
+ /home/runner/work/WebServer/WebServer/WebServer/inc/Buffer.h \
+ /usr/include/c++/13/algorithm /usr/include/c++/13/bits/ranges_algo.h \
+ /usr/include/c++/13/pstl/glue_algorithm_defs.h /usr/include/dirent.h \
  /usr/include/x86_64-linux-gnu/bits/dirent.h \
  /usr/include/x86_64-linux-gnu/bits/dirent_ext.h /usr/include/fcntl.h \
  /usr/include/x86_64-linux-gnu/bits/fcntl.h \

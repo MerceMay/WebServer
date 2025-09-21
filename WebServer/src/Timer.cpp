@@ -8,20 +8,15 @@ TimerNode::TimerNode(std::shared_ptr<HttpData> httpData, int milli_timeout)
 
 TimerNode::~TimerNode()
 {
-    if (httpData_.lock())
-    {
-        std::shared_ptr<HttpData> httpData = httpData_.lock();
-        httpData->handleClose(); // handle the close event
-    }
-    httpData_.reset(); // reset the weak pointer
+    httpData_.reset(); // just reset the weak pointer, don't call handleClose()
     isValid_ = false;
 }
 
 TimerNode::TimerNode(const TimerNode& tn)
 {
     this->httpData_ = tn.httpData_;
-    this->expire_time_point = std::chrono::system_clock::now();
-    this->isValid_ = true;
+    this->expire_time_point = tn.expire_time_point;
+    this->isValid_ = tn.isValid_;
 }
 
 TimerNode& TimerNode::operator=(const TimerNode& tn)
@@ -29,8 +24,8 @@ TimerNode& TimerNode::operator=(const TimerNode& tn)
     if (this != &tn)
     {
         this->httpData_ = tn.httpData_;
-        this->expire_time_point = std::chrono::system_clock::now();
-        this->isValid_ = true;
+        this->expire_time_point = tn.expire_time_point;
+        this->isValid_ = tn.isValid_;
     }
     return *this;
 }
@@ -93,6 +88,11 @@ void TimerManager::handleExpiredEvent()
         }
         else if (!(tn->isValid()))
         {
+            // Timer has expired, close the associated HTTP connection if it still exists
+            if (auto httpData = tn->httpData_.lock())
+            {
+                httpData->handleClose(); // properly close the expired connection
+            }
             tn->clearHttpData(); // clear the weak pointer
             timerQueue.pop();    // pop the top element
         }

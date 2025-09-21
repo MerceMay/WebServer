@@ -5,6 +5,7 @@
 #include "Logger.h"
 #include "Timer.h"
 #include "Util.h"
+#include "Buffer.h"
 #include <dirent.h>
 #include <fcntl.h>
 #include <filesystem>
@@ -21,6 +22,7 @@
 
 constexpr int DEFAULT_EXPIRED_TIME = 3000;
 constexpr int DEFAULT_KEEP_ALIVE_TIME = 5 * 60 * 1000; // the default keep-alive time is 5 minutes
+constexpr size_t MAX_BUFFER_SIZE = 64 * 1024; // 64KB max buffer size to prevent memory exhaustion
 
 class EventLoop;
 class Channel;
@@ -131,8 +133,8 @@ private:
     std::weak_ptr<TimerNode> timer_;   // timer_ is managed by timerManager, so it is a weak pointer
 
     int fd_;
-    std::string inBuffer_;            // Input buffer
-    std::string outBuffer_;           // Output buffer
+    Buffer inBuffer_;                 // Input buffer - more efficient than std::string
+    Buffer outBuffer_;                // Output buffer - more efficient than std::string
     bool error_;                      // Error flag
     ConnectionState connectionState_; // Connection state
     HttpMethod httpMethod_;
@@ -217,6 +219,9 @@ public:
     std::shared_ptr<EventLoop> getLoop();
 
     std::shared_ptr<Channel> getChannel();
+    
+    // Optimize buffer sizes for long-lived connections
+    void optimizeBuffers();
 
     // Handle connection close logic, clean up resources, and remove channel_ from the event loop.
     // Called when the connection is disconnected or needs to be closed.

@@ -2,16 +2,18 @@
 
 HttpData::URLState HttpData::parseRequestLine()
 {
-    // Step 1: find the end of the request line
-    size_t pos = inBuffer_.find("\r\n", readIdx_);
-    if (pos == std::string::npos)
+    // Step 1: find the end of the request line using Buffer's findCRLF
+    const char* crlf = inBuffer_.findCRLF();
+    if (crlf == nullptr)
     {
         return URLState::AGAIN; // if the request line is not complete, wait next event to read more data
     }
 
     // Step 2: extract the request line
-    request_line = inBuffer_.substr(readIdx_, pos - readIdx_);
-    readIdx_ = pos + 2; // update read index to the next line, past \r\n
+    size_t lineLen = crlf - inBuffer_.peek();
+    request_line = std::string(inBuffer_.peek(), lineLen);
+    inBuffer_.retrieve(lineLen + 2); // +2 to skip \r\n
+    readIdx_ = 0; // reset readIdx since we're using Buffer now
 
     // Step 3: get the HTTP method
     if (!parseHttpMethod(request_line))
@@ -158,29 +160,32 @@ HttpData::HeaderState HttpData::parseHeader()
 {
     while (true)
     {
-        // Step 1: Check the end position of the current line
-        size_t lineEnd = inBuffer_.find("\r\n", readIdx_);
-        if (lineEnd == std::string::npos)
+        // Step 1: Check the end position of the current line using Buffer
+        const char* crlf = inBuffer_.findCRLF();
+        if (crlf == nullptr)
         {
             return HeaderState::AGAIN; // Incomplete data, need more data
         }
 
+        const char* lineStart = inBuffer_.peek();
+        size_t lineLen = crlf - lineStart;
+
         // Step 2: Check if the line is empty, empty line indicates the end of header parsing
-        if (lineEnd == readIdx_)
+        if (lineLen == 0)
         {
-            readIdx_ += 2; // Skip \r\n
+            inBuffer_.retrieve(2); // Skip \r\n
             break;
         }
 
         // Step 3: Check the position of the colon to separate the header key and value
-        size_t colonPos = inBuffer_.find(':', readIdx_);
-        if (colonPos == std::string::npos || colonPos > lineEnd)
+        const char* colon = std::find(lineStart, crlf, ':');
+        if (colon == crlf)
         {
             return HeaderState::ERROR; // Invalid header format
         }
 
         // Step 4: Extract header key
-        std::string key = inBuffer_.substr(readIdx_, colonPos - readIdx_);
+        std::string key(lineStart, colon - lineStart);
         key = trimTrailingSpaces(key); // Remove trailing spaces from key
         if (key.empty())
         {
@@ -188,13 +193,13 @@ HttpData::HeaderState HttpData::parseHeader()
         }
 
         // Step 5: Extract header value
-        size_t valueStart = colonPos + 1;
-        while (valueStart < lineEnd && (inBuffer_[valueStart] == ' ' || inBuffer_[valueStart] == '\t'))
+        const char* valueStart = colon + 1;
+        while (valueStart < crlf && (*valueStart == ' ' || *valueStart == '\t'))
         {
             ++valueStart; // Skip leading spaces from value
         }
 
-        std::string value = inBuffer_.substr(valueStart, lineEnd - valueStart);
+        std::string value(valueStart, crlf - valueStart);
         value = trimTrailingSpaces(value); // Remove trailing spaces from value
         if (value.empty())
         {
@@ -204,8 +209,8 @@ HttpData::HeaderState HttpData::parseHeader()
         // Step 6: Save key-value pair to header table
         headerFields_[key] = value;
 
-        // Step 7: Update read position, process next line
-        readIdx_ = lineEnd + 2; // Skip \r\n
+        // Step 7: Retrieve processed line including CRLF
+        inBuffer_.retrieve(lineLen + 2);
     }
     return HeaderState::SUCCESS;
 }
@@ -316,7 +321,8 @@ std::string HttpData::buildResponseHeader(const std::string& filetype)
 
 HttpData::AnalyzeState HttpData::handleHelloRequest()
 {
-    outBuffer_ = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 11\r\n\r\nHello World";
+    std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 11\r\n\r\nHello World";
+    outBuffer_.append(response);
     return AnalyzeState::SUCCESS;
 }
 
@@ -333,7 +339,7 @@ HttpData::AnalyzeState HttpData::handleIndexRequest(std::string& header)
     header += "Content-Length: " + std::to_string(body.size()) + "\r\n";
     header += "Server: MerceMay's Web Server\r\n\r\n";
 
-    outBuffer_ = header + body;
+    outBuffer_.append(header + body);
     return AnalyzeState::SUCCESS;
 }
 
@@ -358,7 +364,7 @@ HttpData::AnalyzeState HttpData::handleFileRequest(std::string& header, const st
 
     if (httpMethod_ == HttpMethod::HEAD)
     {
-        outBuffer_ = header;
+        outBuffer_.append(header);
         return AnalyzeState::SUCCESS;
     }
 
@@ -401,7 +407,8 @@ HttpData::AnalyzeState HttpData::sendFileContent(const std::string& fullPath, co
     }
 
     char* src_addr = static_cast<char*>(mmapResource.addr);
-    outBuffer_ = header + std::string(src_addr, fileSize);
+    outBuffer_.append(header);
+    outBuffer_.append(src_addr, fileSize);
 
     return AnalyzeState::SUCCESS;
 }
@@ -492,6 +499,16 @@ void HttpData::handleRead()
     {
         bool zero = false;
         int readBytes = readn(fd_, inBuffer_);
+
+        // Check for buffer overflow protection
+        if (inBuffer_.readableBytes() > MAX_BUFFER_SIZE)
+        {
+            error_ = true;
+            LOG("log") << "Buffer overflow protection triggered";
+            sendErrorHttp(fd_, 413, "Request Entity Too Large");
+            inBuffer_.clear();
+            return;
+        }
 
         // Connection is closing, directly clear the buffer
         if (connectionState_ == ConnectionState::DISCONNECTING)
@@ -631,7 +648,7 @@ void HttpData::handleRead()
                 inBuffer_.clear();
                 return;
             }
-            if (static_cast<int>(inBuffer_.size()) < content_length) // indicate that the body is not complete
+            if (static_cast<int>(inBuffer_.readableBytes()) < content_length) // indicate that the body is not complete
                 return;
             processState_ = ProcessState::ANALYZE;
         }
@@ -646,7 +663,7 @@ void HttpData::handleRead()
             }
             else
             {
-                inBuffer_.erase(0, readIdx_); // remove the data that has been processed
+                inBuffer_.retrieveAll(); // remove all processed data from buffer
                 processState_ = ProcessState::FINISH;
                 return;
             }
@@ -661,7 +678,7 @@ void HttpData::handleRead()
     unsigned int events = channel_->getEvents();
 
     // there is data to be sent
-    if (!outBuffer_.empty())
+    if (outBuffer_.readableBytes() > 0)
     {
         events |= EPOLLOUT | EPOLLET; // add write event
     }
@@ -677,7 +694,7 @@ void HttpData::handleRead()
         }
 
         // there is still unprocessed data in the buffer, indicating a keep-alive connection, register read event again
-        if (!inBuffer_.empty())
+        if (inBuffer_.readableBytes() > 0)
         {
             events |= EPOLLIN | EPOLLET; // add read event
         }
@@ -707,7 +724,7 @@ void HttpData::handleWrite()
             return;
         }
 
-        if (outBuffer_.empty())
+        if (outBuffer_.readableBytes() == 0)
         {
             // write operation completed, buffer is empty
             if (connectionState_ == ConnectionState::DISCONNECTING)
@@ -785,6 +802,13 @@ void HttpData::reset()
     filename_.clear();
     path_.clear();
     headerFields_.clear();
+    
+    // Clear buffers but don't shrink them to avoid frequent reallocations
+    inBuffer_.retrieveAll();
+    outBuffer_.retrieveAll();
+    
+    // Optimize buffers for long-lived connections
+    optimizeBuffers();
 
     unlinkTimer();
 }
@@ -825,4 +849,21 @@ void HttpData::newEvent()
 {
     channel_->setEvents(EPOLLIN | EPOLLET | EPOLLONESHOT);
     loop_->addChannel(channel_, DEFAULT_EXPIRED_TIME);
+}
+
+void HttpData::optimizeBuffers()
+{
+    // If buffers are much larger than needed, shrink them to save memory
+    const size_t SHRINK_THRESHOLD = 8 * 1024; // 8KB threshold
+    const size_t RESERVE_SIZE = 1024; // Keep 1KB reserved
+    
+    if (inBuffer_.readableBytes() == 0 && inBuffer_.size() > SHRINK_THRESHOLD)
+    {
+        inBuffer_.shrink(RESERVE_SIZE);
+    }
+    
+    if (outBuffer_.readableBytes() == 0 && outBuffer_.size() > SHRINK_THRESHOLD)
+    {
+        outBuffer_.shrink(RESERVE_SIZE);
+    }
 }
