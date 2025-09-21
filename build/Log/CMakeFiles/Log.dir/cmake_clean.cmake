@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "/home/jack/code/WebServer/lib/libLog.a"
-  "/home/jack/code/WebServer/lib/libLog.pdb"
+  "/home/runner/work/WebServer/WebServer/lib/libLog.a"
+  "/home/runner/work/WebServer/WebServer/lib/libLog.pdb"
   "CMakeFiles/Log.dir/src/AppendFile.cpp.o"
   "CMakeFiles/Log.dir/src/AppendFile.cpp.o.d"
   "CMakeFiles/Log.dir/src/AsyncLogging.cpp.o"

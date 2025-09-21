@@ -1,4 +1,5 @@
 #include "Util.h"
+#include "Buffer.h"
 
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -82,6 +83,47 @@ ssize_t readn(int fd, std::string& inBuffer)
     return readn(fd, inBuffer, zero);
 }
 
+ssize_t readn(int fd, Buffer& inBuffer, bool& zero)
+{
+    ssize_t readed = 0;
+    ssize_t read_sum = 0;
+    while (true)
+    {
+        inBuffer.ensureWritableBytes(MAX_BUFF);
+        char* buf = inBuffer.beginWrite();
+        
+        if ((readed = read(fd, buf, MAX_BUFF)) < 0)
+        {
+            if (errno == EINTR)
+            {
+                readed = 0;
+            }
+            else if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                return read_sum;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        else if (readed == 0)
+        {
+            zero = true;
+            break;
+        }
+        read_sum += readed;
+        inBuffer.hasWritten(readed);
+    }
+    return read_sum;
+}
+
+ssize_t readn(int fd, Buffer& inBuffer)
+{
+    bool zero = false;
+    return readn(fd, inBuffer, zero);
+}
+
 ssize_t writen(int fd, void* buff, size_t n)
 {
     size_t remain = n;
@@ -150,6 +192,45 @@ ssize_t writen(int fd, std::string& sbuff)
     {
         sbuff = sbuff.substr(write_sum);
     }
+    return write_sum;
+}
+
+ssize_t writen(int fd, Buffer& sbuff)
+{
+    size_t remain = sbuff.readableBytes();
+    ssize_t writed = 0;
+    ssize_t write_sum = 0;
+    const char* ptr = sbuff.peek();
+    
+    while (remain > 0)
+    {
+        writed = write(fd, ptr + write_sum, remain);
+        if (writed < 0)
+        {
+            if (errno == EINTR)
+            {
+                writed = 0;
+                continue;
+            }
+            else if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                break;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        write_sum += writed;
+        remain -= writed;
+    }
+    
+    // Remove written data from buffer
+    if (write_sum > 0)
+    {
+        sbuff.retrieve(write_sum);
+    }
+    
     return write_sum;
 }
 

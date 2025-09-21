@@ -8,6 +8,7 @@ class HttpData;
 
 class TimerNode
 {
+    friend class TimerManager; // Allow TimerManager to access private members
 private:
     bool isValid_;
     std::chrono::system_clock::time_point expire_time_point;

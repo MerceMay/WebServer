@@ -1,3 +1,3 @@
 file(REMOVE_RECURSE
-  "/home/jack/code/WebServer/lib/libWebServer.a"
+  "/home/runner/work/WebServer/WebServer/lib/libWebServer.a"
 )
