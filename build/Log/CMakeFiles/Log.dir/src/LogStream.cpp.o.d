@@ -1,7 +1,8 @@
 Log/CMakeFiles/Log.dir/src/LogStream.cpp.o: \
- /home/jack/code/WebServer/Log/src/LogStream.cpp \
- /usr/include/stdc-predef.h /home/jack/code/WebServer/Log/inc/LogStream.h \
- /home/jack/code/WebServer/Log/inc/FixedBuffer.h \
+ /home/runner/work/WebServer/WebServer/Log/src/LogStream.cpp \
+ /usr/include/stdc-predef.h \
+ /home/runner/work/WebServer/WebServer/Log/inc/LogStream.h \
+ /home/runner/work/WebServer/WebServer/Log/inc/FixedBuffer.h \
  /usr/include/c++/13/array /usr/include/c++/13/compare \
  /usr/include/c++/13/concepts /usr/include/c++/13/type_traits \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
