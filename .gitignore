@@ -1,0 +1,20 @@
+# Build artifacts
+build/
+bin/
+lib/
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# IDE files
+.vscode/
+.idea/
+
+# Log files
+*.log
+
+# Object files
+*.o
+*.obj

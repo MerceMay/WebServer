@@ -1,0 +1,15 @@
+/home/runner/work/WebServer/WebServer/build/CMakeFiles/edit_cache.dir
+/home/runner/work/WebServer/WebServer/build/CMakeFiles/rebuild_cache.dir
+/home/runner/work/WebServer/WebServer/build/Log/CMakeFiles/Log.dir
+/home/runner/work/WebServer/WebServer/build/Log/CMakeFiles/edit_cache.dir
+/home/runner/work/WebServer/WebServer/build/Log/CMakeFiles/rebuild_cache.dir
+/home/runner/work/WebServer/WebServer/build/WebServer/CMakeFiles/WebServer.dir
+/home/runner/work/WebServer/WebServer/build/WebServer/CMakeFiles/edit_cache.dir
+/home/runner/work/WebServer/WebServer/build/WebServer/CMakeFiles/rebuild_cache.dir
+/home/runner/work/WebServer/WebServer/build/WebBench/CMakeFiles/WebBench.dir
+/home/runner/work/WebServer/WebServer/build/WebBench/CMakeFiles/edit_cache.dir
+/home/runner/work/WebServer/WebServer/build/WebBench/CMakeFiles/rebuild_cache.dir
+/home/runner/work/WebServer/WebServer/build/Demo/CMakeFiles/Server.dir
+/home/runner/work/WebServer/WebServer/build/Demo/CMakeFiles/Client.dir
+/home/runner/work/WebServer/WebServer/build/Demo/CMakeFiles/edit_cache.dir
+/home/runner/work/WebServer/WebServer/build/Demo/CMakeFiles/rebuild_cache.dir

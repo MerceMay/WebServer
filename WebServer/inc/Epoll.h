@@ -5,10 +5,14 @@
 #include <memory>
 #include <sys/epoll.h>
 #include <vector>
+#include <utility>
 
 class Channel;
 class HttpData;
 class TimerManager;
+
+// Type alias for Channel and its active events
+using ChannelEvent = std::pair<std::shared_ptr<Channel>, unsigned int>;
 
 class Epoll
 {
@@ -39,9 +43,9 @@ public:
 
     bool addTimerNode(std::shared_ptr<Channel> request, int timeout); // set the timeout of the channel
 
-    std::vector<std::shared_ptr<Channel>> runEpoll(); // get the events that occurred in epoll by epoll_wait
+    std::vector<ChannelEvent> runEpoll(); // get the events that occurred in epoll by epoll_wait
 
-    std::vector<std::shared_ptr<Channel>> getEventsRequest(int events_sum); // get the events that occurred in epoll
+    std::vector<ChannelEvent> getEventsRequest(int events_sum); // get the events that occurred in epoll
 
     void handleExpired(); // handle expired events
 

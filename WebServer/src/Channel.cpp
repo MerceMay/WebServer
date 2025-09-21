@@ -3,24 +3,20 @@
 Channel::Channel(std::shared_ptr<EventLoop> loop)
     : loop_(loop),
       fd_(-1),
-      events_(0),
-      rightnowEvents_(0),
-      lastEvents_(0)
+      events_(0)
 {
 }
 
 Channel::Channel(std::shared_ptr<EventLoop> loop, int fd)
     : loop_(loop),
       fd_(fd),
-      events_(0),
-      rightnowEvents_(0),
-      lastEvents_(0)
+      events_(0)
 {
 }
 
-void Channel::handleEvent()
+void Channel::handleEvent(unsigned int activeEvents)
 {
-    if (rightnowEvents_ & EPOLLERR) // if there exists error event
+    if (activeEvents & EPOLLERR) // if there exists error event
     {
         if (errorHandler)
         {
@@ -28,18 +24,18 @@ void Channel::handleEvent()
         }
         return;
     }
-    if ((rightnowEvents_ & EPOLLHUP) && !(rightnowEvents_ & EPOLLIN)) // if this channel is holding up and there is no read event
+    if ((activeEvents & EPOLLHUP) && !(activeEvents & EPOLLIN)) // if this channel is holding up and there is no read event
     {
         return; // do nothing
     }
-    if (rightnowEvents_ & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) // read event
+    if (activeEvents & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) // read event
     {
         if (readHandler)
         {
             readHandler();
         }
     }
-    if (rightnowEvents_ & EPOLLOUT) // write event
+    if (activeEvents & EPOLLOUT) // write event
     {
         if (writeHandler)
         {
@@ -52,12 +48,3 @@ void Channel::handleEvent()
     }
 }
 
-bool Channel::isEqualAndSetLastEventsToEvents()
-{
-    bool isEqual = (events_ == lastEvents_);
-    if (isEqual)
-    {
-        lastEvents_ = events_;
-    }
-    return isEqual;
-}
