@@ -8,9 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/runner/work/WebServer/WebServer/WebBench/src/server.cpp" "WebBench/CMakeFiles/WebBench.dir/src/server.cpp.o" "gcc" "WebBench/CMakeFiles/WebBench.dir/src/server.cpp.o.d"
-  "/home/runner/work/WebServer/WebServer/WebBench/src/webbench.cpp" "WebBench/CMakeFiles/WebBench.dir/src/webbench.cpp.o" "gcc" "WebBench/CMakeFiles/WebBench.dir/src/webbench.cpp.o.d"
-  "" "/home/runner/work/WebServer/WebServer/bin/WebBench" "gcc" "WebBench/CMakeFiles/WebBench.dir/link.d"
+  "/home/jack/code/WebServer/WebBench/src/server.cpp" "WebBench/CMakeFiles/WebBench.dir/src/server.cpp.o" "gcc" "WebBench/CMakeFiles/WebBench.dir/src/server.cpp.o.d"
+  "/home/jack/code/WebServer/WebBench/src/webbench.cpp" "WebBench/CMakeFiles/WebBench.dir/src/webbench.cpp.o" "gcc" "WebBench/CMakeFiles/WebBench.dir/src/webbench.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

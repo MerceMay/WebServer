@@ -1,1 +1,1 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/Client.dir/link.d CMakeFiles/Client.dir/HttpClient.cpp.o -o /home/runner/work/WebServer/WebServer/bin/Client
+/usr/bin/g++ -g CMakeFiles/Client.dir/HttpClient.cpp.o -o /home/jack/code/WebServer/bin/Client 

@@ -1,8 +1,7 @@
 Log/CMakeFiles/Log.dir/src/LogFile.cpp.o: \
- /home/runner/work/WebServer/WebServer/Log/src/LogFile.cpp \
- /usr/include/stdc-predef.h \
- /home/runner/work/WebServer/WebServer/Log/inc/LogFile.h \
- /home/runner/work/WebServer/WebServer/Log/inc/AppendFile.h \
+ /home/jack/code/WebServer/Log/src/LogFile.cpp /usr/include/stdc-predef.h \
+ /home/jack/code/WebServer/Log/inc/LogFile.h \
+ /home/jack/code/WebServer/Log/inc/AppendFile.h \
  /usr/include/c++/13/fstream /usr/include/c++/13/bits/requires_hosted.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h \

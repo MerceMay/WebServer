@@ -1,9 +1,8 @@
 Log/CMakeFiles/Log.dir/src/Logger.cpp.o: \
- /home/runner/work/WebServer/WebServer/Log/src/Logger.cpp \
- /usr/include/stdc-predef.h \
- /home/runner/work/WebServer/WebServer/Log/inc/Logger.h \
- /home/runner/work/WebServer/WebServer/Log/inc/LogStream.h \
- /home/runner/work/WebServer/WebServer/Log/inc/FixedBuffer.h \
+ /home/jack/code/WebServer/Log/src/Logger.cpp /usr/include/stdc-predef.h \
+ /home/jack/code/WebServer/Log/inc/Logger.h \
+ /home/jack/code/WebServer/Log/inc/LogStream.h \
+ /home/jack/code/WebServer/Log/inc/FixedBuffer.h \
  /usr/include/c++/13/array /usr/include/c++/13/compare \
  /usr/include/c++/13/concepts /usr/include/c++/13/type_traits \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
@@ -162,10 +161,10 @@ Log/CMakeFiles/Log.dir/src/Logger.cpp.o: \
  /usr/include/c++/13/bits/basic_ios.tcc \
  /usr/include/c++/13/bits/ostream.tcc /usr/include/c++/13/istream \
  /usr/include/c++/13/bits/istream.tcc \
- /home/runner/work/WebServer/WebServer/Log/inc/LoggingManager.h \
- /home/runner/work/WebServer/WebServer/Log/inc/AsyncLogging.h \
- /home/runner/work/WebServer/WebServer/Log/inc/LogFile.h \
- /home/runner/work/WebServer/WebServer/Log/inc/AppendFile.h \
+ /home/jack/code/WebServer/Log/inc/LoggingManager.h \
+ /home/jack/code/WebServer/Log/inc/AsyncLogging.h \
+ /home/jack/code/WebServer/Log/inc/LogFile.h \
+ /home/jack/code/WebServer/Log/inc/AppendFile.h \
  /usr/include/c++/13/fstream /usr/include/c++/13/bits/codecvt.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/basic_file.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++io.h \

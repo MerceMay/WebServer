@@ -1,9 +1,8 @@
 WebBench/CMakeFiles/WebBench.dir/src/server.cpp.o: \
- /home/runner/work/WebServer/WebServer/WebBench/src/server.cpp \
+ /home/jack/code/WebServer/WebBench/src/server.cpp \
  /usr/include/stdc-predef.h \
- /home/runner/work/WebServer/WebServer/WebBench/inc/server.h \
- /usr/include/arpa/inet.h /usr/include/features.h \
- /usr/include/features-time64.h \
+ /home/jack/code/WebServer/WebBench/inc/server.h /usr/include/arpa/inet.h \
+ /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/x86_64-linux-gnu/bits/wordsize.h \
  /usr/include/x86_64-linux-gnu/bits/timesize.h \
  /usr/include/x86_64-linux-gnu/sys/cdefs.h \

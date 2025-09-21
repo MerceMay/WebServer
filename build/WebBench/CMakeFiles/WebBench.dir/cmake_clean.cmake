@@ -1,7 +1,6 @@
 file(REMOVE_RECURSE
-  "/home/runner/work/WebServer/WebServer/bin/WebBench"
-  "/home/runner/work/WebServer/WebServer/bin/WebBench.pdb"
-  "CMakeFiles/WebBench.dir/link.d"
+  "/home/jack/code/WebServer/bin/WebBench"
+  "/home/jack/code/WebServer/bin/WebBench.pdb"
   "CMakeFiles/WebBench.dir/src/server.cpp.o"
   "CMakeFiles/WebBench.dir/src/server.cpp.o.d"
   "CMakeFiles/WebBench.dir/src/webbench.cpp.o"

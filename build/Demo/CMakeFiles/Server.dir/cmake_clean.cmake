@@ -1,7 +1,6 @@
 file(REMOVE_RECURSE
-  "/home/runner/work/WebServer/WebServer/bin/Server"
-  "/home/runner/work/WebServer/WebServer/bin/Server.pdb"
-  "CMakeFiles/Server.dir/link.d"
+  "/home/jack/code/WebServer/bin/Server"
+  "/home/jack/code/WebServer/bin/Server.pdb"
   "CMakeFiles/Server.dir/HttpServer.cpp.o"
   "CMakeFiles/Server.dir/HttpServer.cpp.o.d"
 )

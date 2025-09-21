@@ -18,3 +18,5 @@ lib/
 # Object files
 *.o
 *.obj
+
+.gitignore

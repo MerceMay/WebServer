@@ -8,8 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/runner/work/WebServer/WebServer/Demo/HttpClient.cpp" "Demo/CMakeFiles/Client.dir/HttpClient.cpp.o" "gcc" "Demo/CMakeFiles/Client.dir/HttpClient.cpp.o.d"
-  "" "/home/runner/work/WebServer/WebServer/bin/Client" "gcc" "Demo/CMakeFiles/Client.dir/link.d"
+  "/home/jack/code/WebServer/Demo/HttpClient.cpp" "Demo/CMakeFiles/Client.dir/HttpClient.cpp.o" "gcc" "Demo/CMakeFiles/Client.dir/HttpClient.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.
