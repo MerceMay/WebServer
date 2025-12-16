@@ -1,0 +1,18 @@
+\noindent
+\textbf{高性能 Web 服务器（C++）} \hfill 2025.04 – 2025.05 \\
+\textbf{项目描述}：基于 Reactor 模式从零实现了一个高并发、事件驱动的静态 Web 服务器，支持完整的 HTTP/1.1 协议解析与响应生成，压力测试达到 QPS 15,000+，具备良好的可扩展性和稳定性。
+\begin{itemize}
+    \item \textbf{主从 Reactor 架构设计}：采用主从 Reactor 多线程模式，主线程 EventLoop 专注于监听 socket 的连接接受，通过 \texttt{accept()} 获取新连接后，利用轮询策略将连接分发至子线程的 EventLoop 进行 I/O 处理，实现了连接管理与 I/O 处理的职责分离，提升系统并发能力。
+    
+    \item \textbf{事件驱动与线程池}：每个子线程封装独立的 \texttt{epoll} 实例和 \texttt{eventfd}。主线程接受连接后，通过任务队列（\texttt{queueInLoop}）安全地将 \texttt{HttpData} 初始化任务提交到目标子线程，并利用 \texttt{eventfd} 触发子线程唤醒机制，确保跨线程任务调度的线程安全性和低延迟唤醒。
+    
+    \item \textbf{HTTP 协议状态机解析器}：设计并实现基于有限状态机的 HTTP 请求解析器，支持请求行（Request Line）、请求头（Headers）、请求体（Body）的分阶段解析。状态机能够处理 TCP 数据包的不完整到达情况，当数据不足时返回 \texttt{AGAIN} 状态挂起解析流程，待数据就绪后从断点恢复解析，保证协议解析的鲁棒性和容错性。
+    
+    \item \textbf{异步日志系统}：构建了基于双缓冲区和生产者-消费者模型的异步日志系统。前端（业务线程）负责日志格式化并写入当前缓冲区，后端（日志线程）定期将满载的缓冲区交换并刷盘，实现日志生成与磁盘 I/O 的完全解耦，避免阻塞业务逻辑，显著降低日志写入对性能的影响。
+    
+    \item \textbf{定时器与连接管理}：基于最小堆（\texttt{priority\_queue}）实现高效定时器管理，自动监控并清理超时的空闲连接。定时器与 \texttt{HttpData} 通过 \texttt{weak\_ptr} 松耦合关联，防止循环引用导致的内存泄漏，及时释放系统资源，提升服务器长时间运行的稳定性。
+    
+    \item \textbf{技术特性}：采用 \texttt{epoll} 边缘触发模式（ET）实现高效 I/O 多路复用；所有 socket 设置为非阻塞模式；使用 RAII 机制管理资源生命周期；通过互斥量（\texttt{std::mutex}）和条件变量（\texttt{std::condition\_variable}）保证线程间的同步与通信；支持 HTTP 持久连接（Keep-Alive）以减少连接开销。
+\end{itemize}
+\textbf{技术栈}：C++20、epoll、主从 Reactor 模式、线程池、状态机、互斥量、条件变量、RAII、非阻塞 I/O、eventfd、最小堆、智能指针
+\vspace{0.2cm}
