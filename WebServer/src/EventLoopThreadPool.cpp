@@ -1,39 +1,55 @@
 #include "EventLoopThreadPool.h"
+#include "EventLoopThread.h"
+#include "EventLoop.h"
+#include <assert.h>
 
-EventLoopThreadPool::EventLoopThreadPool(std::shared_ptr<EventLoop> mainLoop, int numThreads)
-    : mainEventLoop_(mainLoop),
+EventLoopThreadPool::EventLoopThreadPool(EventLoop* baseLoop, int numThreads)
+    : baseLoop_(baseLoop),
       started_(false),
       numThreads_(numThreads),
-      nextIndex_(0)
+      next_(0)
 {
-    if (numThreads_ <= 0)
-    {
-        LOG("log") << "numThreads_ <= 0";
-        exit(EXIT_FAILURE);
-    }
+}
+
+EventLoopThreadPool::~EventLoopThreadPool()
+{
 }
 
 void EventLoopThreadPool::start()
 {
-    assert(mainEventLoop_->isEventLoopInOwnThread()); // make sure the main event loop is in the main thread
     assert(!started_);
+    baseLoop_->assertInLoopThread();
+
     started_ = true;
+
     for (int i = 0; i < numThreads_; ++i)
     {
-        threads_.push_back(std::make_unique<EventLoopThread>());
-        loops_.push_back(threads_[i]->startLoop());
+        std::unique_ptr<EventLoopThread> t = std::make_unique<EventLoopThread>();
+        loops_.push_back(t->startLoop());
+        threads_.push_back(std::move(t));
+    }
+    
+    if (numThreads_ == 0 && loops_.empty())
+    {
+        // No threads, everything in baseLoop
+        // loops_.push_back(baseLoop_); // Optional: depending on policy
     }
 }
 
-std::weak_ptr<EventLoop> EventLoopThreadPool::getNextLoop()
+EventLoop* EventLoopThreadPool::getNextLoop()
 {
-    assert(mainEventLoop_->isEventLoopInOwnThread()); // make sure the main event loop is in the main thread
+    baseLoop_->assertInLoopThread();
     assert(started_);
-    std::weak_ptr<EventLoop> loop;
+    EventLoop* loop = baseLoop_;
+
     if (!loops_.empty())
     {
-        loop = loops_[nextIndex_];
-        nextIndex_ = (nextIndex_ + 1) % loops_.size();
+        loop = loops_[next_];
+        ++next_;
+        if (static_cast<size_t>(next_) >= loops_.size())
+        {
+            next_ = 0;
+        }
     }
     return loop;
 }

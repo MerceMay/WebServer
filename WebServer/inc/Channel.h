@@ -1,60 +1,78 @@
 #pragma once
 
-#include "HttpData.h"
-#include "Timer.h"
 #include <functional>
 #include <memory>
 #include <sys/epoll.h>
 
 class EventLoop;
-class HttpData;
 
-class Channel : public std::enable_shared_from_this<Channel>
+// Channel 不再持有任何业务对象的指针，只负责 fd 与 EventLoop 的交互
+class Channel
 {
-private:
-    std::shared_ptr<EventLoop> loop_; // event loop
-    int fd_;
-    unsigned int events_;         // event types registered (EPOLLIN, EPOLLOUT, EPOLLET)
-    unsigned int rightnowEvents_; // event types that are currently active
-    unsigned int lastEvents_;     // last processed event types
-
-    std::weak_ptr<HttpData> holder_; // get the HttpData object which this channel is associated
-
-private:
-    std::function<void()> readHandler;
-    std::function<void()> writeHandler;
-    std::function<void()> errorHandler;
-    std::function<void()> connectHandler;
-
 public:
-    Channel(std::shared_ptr<EventLoop> loop);
+    using EventCallback = std::function<void()>;
 
-    Channel(std::shared_ptr<EventLoop> loop, int fd);
+    Channel(EventLoop* loop, int fd);
+    ~Channel();
 
-    Channel() = delete;
+    // Non-copyable, Non-movable (Channel belongs to a specific Loop/Connection)
     Channel(const Channel&) = delete;
     Channel& operator=(const Channel&) = delete;
     Channel(Channel&&) = delete;
     Channel& operator=(Channel&&) = delete;
 
-    ~Channel() {}
-
-    int getFd() const { return fd_; }
-    void setFd(int fd) { fd_ = fd; }
-
-    void setHolder(std::shared_ptr<HttpData> holder) { holder_ = holder; }
-    std::shared_ptr<HttpData> getHolder() { return holder_.lock(); }
-
-    void setReadHandler(std::function<void()> handler) { readHandler = handler; }
-    void setWriteHandler(std::function<void()> handler) { writeHandler = handler; }
-    void setErrorHandler(std::function<void()> handler) { errorHandler = handler; }
-    void setConnectHandler(std::function<void()> handler) { connectHandler = handler; }
-
     void handleEvent();
 
-    void setEvents(unsigned int events) { events_ = events; }
-    unsigned int& getEvents() { return events_; }
-    void setRevents(unsigned int revents) { rightnowEvents_ = revents; }
+    // Callbacks setup
+    void setReadCallback(EventCallback cb) { readCallback_ = std::move(cb); }
+    void setWriteCallback(EventCallback cb) { writeCallback_ = std::move(cb); }
+    void setCloseCallback(EventCallback cb) { closeCallback_ = std::move(cb); }
+    void setErrorCallback(EventCallback cb) { errorCallback_ = std::move(cb); }
 
-    bool isEqualAndSetLastEventsToEvents();
+    int fd() const { return fd_; }
+    int events() const { return events_; }
+    
+    // API for EventLoop interactions
+    void setRevents(int revt) { revents_ = revt; }
+    bool isNoneEvent() const { return events_ == kNoneEvent; }
+
+    void enableReading() { events_ |= kReadEvent; update(); }
+    void disableReading() { events_ &= ~kReadEvent; update(); }
+    void enableWriting() { events_ |= kWriteEvent; update(); }
+    void disableWriting() { events_ &= ~kWriteEvent; update(); }
+    void disableAll() { events_ = kNoneEvent; update(); }
+    
+    bool isWriting() const { return events_ & kWriteEvent; }
+    bool isReading() const { return events_ & kReadEvent; }
+
+    // For Epoll
+    int index() { return index_; }
+    void setIndex(int idx) { index_ = idx; }
+
+    EventLoop* ownerLoop() { return loop_; }
+    
+    // Tie this channel to the owner object (TcpConnection) to prevent use-after-free
+    void tie(const std::shared_ptr<void>& obj);
+
+private:
+    void update(); // Calls loop_->updateChannel(this)
+    void handleEventWithGuard();
+
+    static const int kNoneEvent = 0;
+    static const int kReadEvent = EPOLLIN | EPOLLPRI;
+    static const int kWriteEvent = EPOLLOUT;
+
+    EventLoop* loop_; // Raw pointer: Loop outlives Channel
+    const int fd_;
+    int events_;
+    int revents_;
+    int index_; // Used by Poller
+    
+    bool tied_;
+    std::weak_ptr<void> tie_;
+
+    EventCallback readCallback_;
+    EventCallback writeCallback_;
+    EventCallback closeCallback_;
+    EventCallback errorCallback_;
 };

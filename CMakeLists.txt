@@ -31,6 +31,10 @@ set(WEBSERVER_SOURCES
     ${CMAKE_SOURCE_DIR}/WebServer/src/Server.cpp
     ${CMAKE_SOURCE_DIR}/WebServer/src/Timer.cpp
     ${CMAKE_SOURCE_DIR}/WebServer/src/Util.cpp
+    ${CMAKE_SOURCE_DIR}/WebServer/src/Acceptor.cpp
+    ${CMAKE_SOURCE_DIR}/WebServer/src/Buffer.cpp
+    ${CMAKE_SOURCE_DIR}/WebServer/src/HttpContext.cpp
+    ${CMAKE_SOURCE_DIR}/WebServer/src/TcpConnection.cpp
 )
 
 set(WEBBENCH_SOURCES

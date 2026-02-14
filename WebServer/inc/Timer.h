@@ -1,55 +1,58 @@
 #pragma once
-#include "HttpData.h"
+#include <functional>
 #include <chrono>
+#include <set>
+#include <vector>
 #include <memory>
-#include <queue>
+#include "Channel.h"
 
-class HttpData;
+class EventLoop;
 
-class TimerNode
-{
-private:
-    bool isValid_;
-    std::chrono::system_clock::time_point expire_time_point;
-    std::weak_ptr<HttpData> httpData_;
-
+class TimerNode {
 public:
-    TimerNode(std::shared_ptr<HttpData> httpData, int milli_timeout);
-    ~TimerNode();
+    using TimerCallback = std::function<void()>;
+    using Clock = std::chrono::steady_clock;
+    using Timestamp = Clock::time_point;
 
-    TimerNode(const TimerNode& tn);
-    TimerNode& operator=(const TimerNode& tn);
+    TimerNode(TimerCallback cb, Timestamp when, double interval)
+        : callback_(cb), expiration_(when), interval_(interval), repeat_(interval > 0.0) {}
 
-    void update(int milli_timeout);
-    bool isValid();
-    void clearHttpData(); // clear the weak pointer of HttpData
+    void run() const { if (callback_) callback_(); }
+    Timestamp expiration() const { return expiration_; }
+    bool repeat() const { return repeat_; }
+    void restart(Timestamp now) { 
+        expiration_ = now + std::chrono::milliseconds(static_cast<int64_t>(interval_ * 1000)); 
+    }
 
-    void expired();
-    bool isDeleted();
-    std::chrono::system_clock::time_point getExpireTime();
+private:
+    TimerCallback callback_;
+    Timestamp expiration_;
+    double interval_;
+    bool repeat_;
 };
 
-class TimerManager
-{
+class TimerManager {
 public:
-    TimerManager() = default;
-    ~TimerManager() = default;
-    TimerManager(const TimerManager&) = delete;
-    TimerManager& operator=(const TimerManager&) = delete;
-    TimerManager(TimerManager&&) = delete;
-    TimerManager& operator=(TimerManager&&) = delete;
-    void addTimerNode(std::shared_ptr<HttpData> httpData, int milli_timeout);
+    using TimerCallback = std::function<void()>;
+    using Clock = std::chrono::steady_clock;
+    using Timestamp = Clock::time_point;
 
-    void handleExpiredEvent();
+    explicit TimerManager(EventLoop* loop);
+    ~TimerManager();
+
+    void addTimer(TimerCallback cb, Timestamp when, double interval);
 
 private:
-    struct TimerCmp
-    {
-        bool operator()(const std::shared_ptr<TimerNode>& lhs, const std::shared_ptr<TimerNode>& rhs) const
-        {
-            return lhs->getExpireTime() > rhs->getExpireTime();
-        }
-    };
+    using Entry = std::pair<Timestamp, TimerNode*>;
+    using TimerList = std::set<Entry>;
 
-    std::priority_queue<std::shared_ptr<TimerNode>, std::vector<std::shared_ptr<TimerNode>>, TimerCmp> timerQueue;
+    void handleRead();
+    std::vector<Entry> getExpired(Timestamp now);
+    void reset(const std::vector<Entry>& expired, Timestamp now);
+    bool insert(TimerNode* timer);
+
+    EventLoop* loop_;
+    int timerfd_;
+    std::unique_ptr<Channel> timerfdChannel_;
+    TimerList timers_;
 };

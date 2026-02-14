@@ -1,71 +1,67 @@
 #pragma once
-// #include "Epoll.h"
-#include "Channel.h"
-#include "Epoll.h"
-#include "Logger.h"
-#include "Util.h"
-#include <cassert>
+
 #include <functional>
-#include <memory>
-#include <sys/epoll.h>
-#include <sys/eventfd.h>
-#include <thread>
 #include <vector>
+#include <memory>
+#include <mutex>
+#include <thread>
+#include <atomic>
+#include <chrono>
 
 class Epoll;
 class Channel;
+class TimerManager;
 
-class EventLoop : public std::enable_shared_from_this<EventLoop>
+class EventLoop
 {
-private:
-    bool isLooping_;  // loop flag
-    bool shouldStop_; // stop flag
-
-    std::shared_ptr<Epoll> epoll_; // epoll instance
-
-    int eventFd_;                           // event file descriptor of eventfd for wakeup
-    std::shared_ptr<Channel> eventChannel_; // wakeup channel
-
-    std::vector<std::function<void()>> pendingFunctions_; // functions to be executed
-    bool isCallingPendingFunctions_;                      // process pending functions flag
-    void doPendingFunctions();                            // execute pending functions
-
-    const std::thread::id threadId_; // thread ID of the current thread
-
-    std::mutex mutex_; // mutex for thread safety
-
-    bool isHandlingEvent_; // handling event flag
-
-    void wakeup();        // wake up the event loop
-    void handleRead();    // handle read event
-    void handleConnect(); // handle connect event
-
 public:
+    using Functor = std::function<void()>;
+
     EventLoop();
-    void initEventChannel(); // initialize event channel
     ~EventLoop();
+
     EventLoop(const EventLoop&) = delete;
     EventLoop& operator=(const EventLoop&) = delete;
-    EventLoop(EventLoop&&) = delete;
-    EventLoop& operator=(EventLoop&&) = delete;
 
-    bool isEventLoopInOwnThread(); // assert if the event loop is in the current thread
+    void loop();
+    void quit();
 
-    void loop(); // start the event loop
+    void runInLoop(Functor cb);
+    void queueInLoop(Functor cb);
 
-    void quit(); // stop the event loop
+    // Timers
+    void runAt(std::chrono::steady_clock::time_point time, std::function<void()> cb);
+    void runAfter(double delay, std::function<void()> cb);
+    void runEvery(double interval, std::function<void()> cb);
 
-    void runInLoop(std::function<void()> func); // execute function in the event loop
+    void wakeup();
+    void updateChannel(Channel* channel);
+    void removeChannel(Channel* channel);
+    bool hasChannel(Channel* channel);
 
-    void queueInLoop(std::function<void()> func); // queue function in the event loop
+    bool isInLoopThread() const { return threadId_ == std::this_thread::get_id(); }
+    void assertInLoopThread();
 
-    void shutdown(std::shared_ptr<Channel> request); // shutdown the channel
+private:
+    void handleRead(); // Wakeup handler
+    void doPendingFunctors();
 
-    void removeChannel(std::shared_ptr<Channel> request); // remove channel from epoll
+    using ChannelList = std::vector<Channel*>;
 
-    void addChannel(std::shared_ptr<Channel> request, int timeout = 0); // add channel to epoll
-
-    void modChannel(std::shared_ptr<Channel> request, int timeout); // mod the event and timeout of event in epoll
-
-    void modChannel(std::shared_ptr<Channel> request); // mod the event of event in epoll
+    std::atomic<bool> looping_;
+    std::atomic<bool> quit_;
+    std::atomic<bool> eventHandling_;
+    std::atomic<bool> callingPendingFunctors_;
+    
+    const std::thread::id threadId_;
+    std::unique_ptr<Epoll> poller_;
+    
+    int wakeupFd_;
+    std::unique_ptr<Channel> wakeupChannel_;
+    std::unique_ptr<TimerManager> timerQueue_;
+    
+    ChannelList activeChannels_;
+    
+    std::mutex mutex_;
+    std::vector<Functor> pendingFunctors_;
 };

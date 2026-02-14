@@ -1,178 +1,110 @@
 #include "Epoll.h"
-#include "Timer.h"
+#include "Channel.h"
+#include <unistd.h>
+#include <cassert>
+#include <cstring>
+#include <iostream>
+
+const int kNew = -1;
+const int kAdded = 1;
+const int kDeleted = 2;
 
 Epoll::Epoll()
-    : epollFd_(epoll_create1(EPOLL_CLOEXEC)) // create epoll instance
+    : epollFd_(epoll_create1(EPOLL_CLOEXEC)),
+      events_(kInitEventListSize)
 {
-    timerManager_ = std::make_unique<TimerManager>(); // create timer manager
-    assert(epollFd_ > 0);                             // check if epoll instance is created successfully
-    events_.resize(MAXFDS);                           // resize events_ vector to maximum number of file descriptors
-    channels_.resize(MAXFDS);
-    httpDatas_.resize(MAXFDS);
+    if (epollFd_ < 0)
+    {
+        perror("epoll_create1");
+    }
 }
 
-bool Epoll::add_epoll(std::shared_ptr<Channel> request, int timeout)
+Epoll::~Epoll()
 {
-    int fd = request->getFd();
-    if (fd < 0)
-    {
-        return false;
-    }
-
-    if (timeout > 0)
-    {
-        addTimerNode(request, timeout);                            // add timer node
-        std::shared_ptr<HttpData> httpData = request->getHolder(); // add corresponding HttpData to httpDatas_
-        httpDatas_[fd] = httpData;                                 // store HttpData in httpDatas_
-    }
-
-    struct epoll_event event;
-    event.data.fd = fd;
-    event.events = request->getEvents(); // get event type
-
-    request->isEqualAndSetLastEventsToEvents(); // set lastEvents_ to events_
-    channels_[fd] = request;                    // store Channel in channels_
-
-    if (epoll_ctl(epollFd_, EPOLL_CTL_ADD, fd, &event) < 0)
-    {
-        LOG("log") << "epoll_ctl add error";
-        channels_[fd].reset(); // remove from channels_ on failure
-        return false;
-    }
-    return true;
+    close(epollFd_);
 }
 
-bool Epoll::mod_epoll(std::shared_ptr<Channel> request, int timeout)
+void Epoll::updateChannel(Channel* channel)
 {
-    if (timeout > 0)
+    const int index = channel->index();
+    int fd = channel->fd();
+    
+    if (index == kNew || index == kDeleted)
     {
-        addTimerNode(request, timeout); // add timer node
-    }
-    int fd = request->getFd();
-    if (fd < 0)
-    {
-        return false;
-    }
-    if (!request->isEqualAndSetLastEventsToEvents())
-    {
-        struct epoll_event event;
-        event.data.fd = fd;
-        event.events = request->getEvents(); // get event type
-        if (epoll_ctl(epollFd_, EPOLL_CTL_MOD, fd, &event) < 0)
+        // Add new channel
+        struct epoll_event ev;
+        bzero(&ev, sizeof ev);
+        ev.events = channel->events();
+        ev.data.ptr = channel;
+        
+        if (epoll_ctl(epollFd_, EPOLL_CTL_ADD, fd, &ev) < 0)
         {
-            LOG("log") << "epoll_ctl mod error";
-            channels_[fd].reset(); // remove from channels_ on failure
-            return false;
+            perror("epoll_ctl add");
         }
-    }
-    return true;
-}
-
-bool Epoll::mod_epoll(std::shared_ptr<Channel> request)
-{
-    int fd = request->getFd();
-    if (fd < 0)
-    {
-        return false;
-    }
-    if (!request->isEqualAndSetLastEventsToEvents())
-    {
-        struct epoll_event event;
-        event.data.fd = fd;
-        event.events = request->getEvents(); // get event type
-        if (epoll_ctl(epollFd_, EPOLL_CTL_MOD, fd, &event) < 0)
-        {
-            LOG("log") << "epoll_ctl mod error";
-            channels_[fd].reset(); // remove from channels_ on failure
-            return false;
-        }
-    }
-    return true;
-}
-
-bool Epoll::del_epoll(std::shared_ptr<Channel> request)
-{
-    int fd = request->getFd();
-    if (fd < 0)
-    {
-        return false;
-    }
-    if (epoll_ctl(epollFd_, EPOLL_CTL_DEL, fd, nullptr) < 0)
-    {
-        LOG("log") << "epoll_ctl del error";
-        return false;
-    }
-    channels_[fd].reset();  // remove fd and Channel association
-    httpDatas_[fd].reset(); // remove fd and HttpData association
-    return true;
-}
-
-bool Epoll::addTimerNode(std::shared_ptr<Channel> request, int timeout)
-{
-    std::shared_ptr<HttpData> holder = request->getHolder();
-    if (holder)
-    {
-        timerManager_->addTimerNode(holder, timeout); // add timer
-        return true;
+        channel->setIndex(kAdded);
     }
     else
     {
-        LOG("log") << "timer add error";
-        return false;
-    }
-}
-
-std::vector<std::shared_ptr<Channel>> Epoll::runEpoll()
-{
-    while (true)
-    {
-        int event_count = epoll_wait(epollFd_, &events_[0], static_cast<int>(events_.size()), EPOLL_TIMEOUT);
-        if (event_count < 0)
+        // Update existing channel
+        struct epoll_event ev;
+        bzero(&ev, sizeof ev);
+        ev.events = channel->events();
+        ev.data.ptr = channel;
+        
+        if (epoll_ctl(epollFd_, EPOLL_CTL_MOD, fd, &ev) < 0)
         {
-            LOG("log") << "epoll_wait error";
-            exit(EXIT_FAILURE);
-        }
-        else if (event_count == 0)
-        {
-            handleExpired(); // handle expired timer events
-            continue;
-        }
-        else
-        {
-            std::vector<std::shared_ptr<Channel>> activeChannels = getEventsRequest(event_count); // get active Channels
-            if (activeChannels.size() > 0)
-            {
-                return activeChannels;
-            }
+            perror("epoll_ctl mod");
         }
     }
 }
 
-std::vector<std::shared_ptr<Channel>> Epoll::getEventsRequest(int events_sum)
+void Epoll::removeChannel(Channel* channel)
 {
-
-    std::vector<std::shared_ptr<Channel>> activeChannels;
-    for (int i = 0; i < events_sum; ++i)
+    int fd = channel->fd();
+    int index = channel->index();
+    
+    if (index == kAdded)
     {
-        int fd = events_[i].data.fd;
-        std::shared_ptr<Channel> cur_channel = channels_[fd];
-        if (cur_channel)
+        if (epoll_ctl(epollFd_, EPOLL_CTL_DEL, fd, nullptr) < 0)
         {
-            cur_channel->setFd(fd);
-            cur_channel->setRevents(events_[i].events);
-            cur_channel->setEvents(0);
-            activeChannels.push_back(cur_channel);
+            perror("epoll_ctl del");
         }
     }
+    channel->setIndex(kNew);
+}
+
+std::vector<Channel*> Epoll::poll(int timeoutMs)
+{
+    int numEvents = epoll_wait(epollFd_, &*events_.begin(), static_cast<int>(events_.size()), timeoutMs);
+    int savedErrno = errno;
+    
+    std::vector<Channel*> activeChannels;
+    
+    if (numEvents > 0)
+    {
+        for (int i = 0; i < numEvents; ++i)
+        {
+            Channel* channel = static_cast<Channel*>(events_[i].data.ptr);
+            channel->setRevents(events_[i].events);
+            activeChannels.push_back(channel);
+        }
+        
+        if (static_cast<size_t>(numEvents) == events_.size())
+        {
+            events_.resize(events_.size() * 2);
+        }
+    }
+    else if (numEvents == 0)
+    {
+        // Timeout
+    }
+    else
+    {
+        if (savedErrno != EINTR)
+        {
+            perror("epoll_wait");
+        }
+    }
+    
     return activeChannels;
-}
-
-void Epoll::handleExpired()
-{
-    timerManager_->handleExpiredEvent();
-}
-
-int Epoll::getEpollFd() const
-{
-    return epollFd_;
 }

@@ -1,104 +1,146 @@
 #include "Timer.h"
+#include "EventLoop.h"
+#include <sys/timerfd.h>
+#include <unistd.h>
+#include <cstring>
+#include <iostream>
 
-TimerNode::TimerNode(std::shared_ptr<HttpData> httpData, int milli_timeout)
-    : isValid_(true), httpData_(httpData)
-{
-    expire_time_point = std::chrono::system_clock::now() + std::chrono::milliseconds(milli_timeout);
-}
+using namespace std;
+using namespace std::chrono;
 
-TimerNode::~TimerNode()
+int createTimerfd()
 {
-    if (httpData_.lock())
+    int timerfd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    if (timerfd < 0)
     {
-        std::shared_ptr<HttpData> httpData = httpData_.lock();
-        httpData->handleClose(); // handle the close event
+        // LOG << "Failed in timerfd_create";
     }
-    httpData_.reset(); // reset the weak pointer
-    isValid_ = false;
+    return timerfd;
 }
 
-TimerNode::TimerNode(const TimerNode& tn)
+void readTimerfd(int timerfd, TimerNode::Timestamp now)
 {
-    this->httpData_ = tn.httpData_;
-    this->expire_time_point = std::chrono::system_clock::now();
-    this->isValid_ = true;
-}
-
-TimerNode& TimerNode::operator=(const TimerNode& tn)
-{
-    if (this != &tn)
+    uint64_t howmany;
+    ssize_t n = ::read(timerfd, &howmany, sizeof howmany);
+    if (n != sizeof howmany)
     {
-        this->httpData_ = tn.httpData_;
-        this->expire_time_point = std::chrono::system_clock::now();
-        this->isValid_ = true;
-    }
-    return *this;
-}
-
-void TimerNode::update(int milli_timeout)
-{
-    expire_time_point = std::chrono::system_clock::now() + std::chrono::milliseconds(milli_timeout);
-}
-
-bool TimerNode::isValid()
-{
-    auto now = std::chrono::system_clock::now();
-    if (now < expire_time_point)
-    {
-        return true;
-    }
-    else
-    {
-        this->expired();
-        return false;
+        // LOG << "Timer::readTimerfd() reads " << n << " bytes instead of 8";
     }
 }
 
-void TimerNode::clearHttpData()
+void resetTimerfd(int timerfd, TimerNode::Timestamp expiration)
 {
-    httpData_.reset();
-    this->expired();
+    struct itimerspec newValue;
+    struct itimerspec oldValue;
+    std::memset(&newValue, 0, sizeof newValue);
+    std::memset(&oldValue, 0, sizeof oldValue);
+
+    int64_t microseconds = duration_cast<std::chrono::microseconds>(
+        expiration - steady_clock::now()).count();
+    
+    if (microseconds < 100) microseconds = 100;
+
+    struct timespec ts;
+    ts.tv_sec = static_cast<time_t>(microseconds / 1000000);
+    ts.tv_nsec = static_cast<long>((microseconds % 1000000) * 1000);
+    
+    newValue.it_value = ts;
+    ::timerfd_settime(timerfd, 0, &newValue, &oldValue);
 }
 
-void TimerNode::expired()
+TimerManager::TimerManager(EventLoop* loop)
+    : loop_(loop),
+      timerfd_(createTimerfd()),
+      timerfdChannel_(new Channel(loop, timerfd_))
 {
-    isValid_ = false;
+    timerfdChannel_->setReadCallback(std::bind(&TimerManager::handleRead, this));
+    timerfdChannel_->enableReading();
 }
 
-bool TimerNode::isDeleted()
+TimerManager::~TimerManager()
 {
-    return !isValid_;
-}
-
-std::chrono::system_clock::time_point TimerNode::getExpireTime()
-{
-    return expire_time_point;
-}
-
-void TimerManager::addTimerNode(std::shared_ptr<HttpData> httpData, int milli_timeout)
-{
-    std::shared_ptr<TimerNode> newNode = std::make_shared<TimerNode>(httpData, milli_timeout);
-    timerQueue.push(newNode);
-    httpData->linkTimer(newNode);
-}
-
-void TimerManager::handleExpiredEvent()
-{
-    while (!timerQueue.empty())
+    timerfdChannel_->disableAll();
+    timerfdChannel_->remove();
+    ::close(timerfd_);
+    for (const auto& entry : timers_)
     {
-        std::shared_ptr<TimerNode> tn = timerQueue.top(); // get the top element
-        if (tn->isDeleted())                              // if the top element is deleted
+        delete entry.second;
+    }
+}
+
+void TimerManager::addTimer(TimerCallback cb, Timestamp when, double interval)
+{
+    TimerNode* timer = new TimerNode(cb, when, interval);
+    loop_->runInLoop(std::bind(&TimerManager::insert, this, timer));
+}
+
+bool TimerManager::insert(TimerNode* timer)
+{
+    bool earliestChanged = false;
+    Timestamp when = timer->expiration();
+    auto it = timers_.begin();
+    if (it == timers_.end() || when < it->first)
+    {
+        earliestChanged = true;
+    }
+    timers_.insert(Entry(when, timer));
+
+    if (earliestChanged)
+    {
+        resetTimerfd(timerfd_, when);
+    }
+    return earliestChanged;
+}
+
+void TimerManager::handleRead()
+{
+    Timestamp now = steady_clock::now();
+    readTimerfd(timerfd_, now);
+
+    std::vector<Entry> expired = getExpired(now);
+
+    for (const auto& entry : expired)
+    {
+        entry.second->run();
+    }
+
+    reset(expired, now);
+}
+
+std::vector<TimerManager::Entry> TimerManager::getExpired(Timestamp now)
+{
+    std::vector<Entry> expired;
+    Entry sentry(now, reinterpret_cast<TimerNode*>(UINTPTR_MAX));
+    TimerList::iterator end = timers_.lower_bound(sentry);
+    std::copy(timers_.begin(), end, back_inserter(expired));
+    timers_.erase(timers_.begin(), end);
+    return expired;
+}
+
+void TimerManager::reset(const std::vector<Entry>& expired, Timestamp now)
+{
+    Timestamp nextExpire;
+
+    for (const auto& entry : expired)
+    {
+        if (entry.second->repeat())
         {
-            timerQueue.pop(); // pop the top element
-        }
-        else if (!(tn->isValid()))
-        {
-            tn->clearHttpData(); // clear the weak pointer
-            timerQueue.pop();    // pop the top element
+            entry.second->restart(now);
+            insert(entry.second);
         }
         else
         {
-            break; // if not expired, exit the loop
+            delete entry.second;
         }
+    }
+
+    if (!timers_.empty())
+    {
+        nextExpire = timers_.begin()->second->expiration();
+    }
+
+    if (nextExpire.time_since_epoch().count() > 0)
+    {
+        resetTimerfd(timerfd_, nextExpire);
     }
 }

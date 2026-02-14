@@ -1,34 +1,42 @@
 #pragma once
-#include "Channel.h"
+
 #include "EventLoop.h"
 #include "EventLoopThreadPool.h"
-#include "Logger.h"
-#include "Util.h"
-#include <arpa/inet.h>
+#include "TcpConnection.h"
+#include "Acceptor.h"
+#include <map>
+#include <string>
 
 class Server
 {
-private:
-    std::shared_ptr<EventLoop> mainEventLoop_;         // main event loop
-    int threadNum_;                                    // thread number
-    std::unique_ptr<EventLoopThreadPool> threadPool_;  // thread pool
-    bool started_;                                     // server started flag
-    std::shared_ptr<Channel> acceptConnectionChannel_; // accept connection channel
-    int port_;                                         // server port
-    int listenFd_;                                     // listen file descriptor
-    static const int MAX_LISTEN_FD = 65535;            // maximum listen file descriptor
 public:
-    Server(std::shared_ptr<EventLoop> loop, int threadNum, int port);
-    ~Server() = default;
-    Server() = delete;
-    Server(const Server&) = delete;
-    Server& operator=(const Server&) = delete;
-    Server(Server&&) = delete;
-    Server& operator=(Server&&) = delete;
+    using ConnectionCallback = TcpConnection::ConnectionCallback;
+    using MessageCallback = TcpConnection::MessageCallback;
 
-    void start(); // start the server
+    Server(EventLoop* loop, int threadNum, int port);
+    ~Server();
 
-    void handleAccept(); // handle accept event
+    void start();
+    
+    void setConnectionCallback(const ConnectionCallback& cb) { connectionCallback_ = cb; }
+    void setMessageCallback(const MessageCallback& cb) { messageCallback_ = cb; }
 
-    void handleThisAccept(); // add listen channel to main event loop
+private:
+    void newConnection(int sockfd, const InetAddress& peerAddr);
+    void removeConnection(const std::shared_ptr<TcpConnection>& conn);
+    void removeConnectionInLoop(const std::shared_ptr<TcpConnection>& conn);
+
+    using ConnectionMap = std::map<std::string, std::shared_ptr<TcpConnection>>;
+
+    EventLoop* loop_;
+    int threadNum_;
+    std::unique_ptr<EventLoopThreadPool> threadPool_;
+    std::unique_ptr<Acceptor> acceptor_;
+    
+    ConnectionCallback connectionCallback_;
+    MessageCallback messageCallback_;
+    
+    bool started_;
+    int nextConnId_;
+    ConnectionMap connections_;
 };
